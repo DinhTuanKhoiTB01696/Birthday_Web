@@ -2,6 +2,10 @@ import React from 'react';
 import { birthdayConfig } from '../data/content';
 
 export default function StartScreen({ onStart }) {
+  // Parse query parameter dynamically using content config parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const isFromGift = urlParams.get(birthdayConfig.qr.giftQueryKey) === birthdayConfig.qr.giftQueryValue;
+
   return (
     <div 
       className="ui-overlay fade-in" 
@@ -30,10 +34,11 @@ export default function StartScreen({ onStart }) {
               fontSize: '0.72rem', 
               letterSpacing: '0.35em', 
               textTransform: 'uppercase', 
-              color: 'var(--text-muted)'
+              color: isFromGift ? '#ec4899' : 'var(--text-muted)',
+              fontWeight: isFromGift ? '500' : '400'
             }}
           >
-            A Little Space For
+            {isFromGift ? birthdayConfig.qr.giftIntroText : "A Little Space For"}
           </span>
           <h1 
             style={{ 
@@ -55,8 +60,9 @@ export default function StartScreen({ onStart }) {
             fontSize: '1rem', 
             color: 'var(--text-muted)', 
             margin: 0,
-            maxWidth: '460px',
-            lineHeight: '1.8'
+            maxWidth: '560px',
+            lineHeight: '1.8',
+            textWrap: 'balance'
           }}
         >
           {birthdayConfig.intro.subtitle}

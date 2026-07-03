@@ -1,0 +1,2 @@
+Drop your local song file here and rename it to 'main-theme.mp3'.
+Once added, the website will play it automatically upon click!

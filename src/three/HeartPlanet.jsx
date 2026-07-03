@@ -1,14 +1,15 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export default function HeartPlanet({ activeScene }) {
+export default function HeartPlanet({ activeScene, onHeartClick3Times, isAccepted }) {
   const meshRef = useRef();
+  const [clickCount, setClickCount] = useState(0);
+  const [pulseScale, setPulseScale] = useState(1);
 
-  // Create the extruded heart shape geometry
+  // Extrude the heart shape using bezier paths
   const heartGeometry = useMemo(() => {
     const shape = new THREE.Shape();
-    // Symmetric heart path centered at (0, 0)
     shape.moveTo(0, 0.4);
     shape.bezierCurveTo(0, 0.75, 0.55, 0.75, 0.55, 0.4);
     shape.bezierCurveTo(0.55, 0.1, 0, -0.3, 0, -0.6); // bottom tip
@@ -29,21 +30,29 @@ export default function HeartPlanet({ activeScene }) {
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
+    const time = state.clock.getElapsedTime();
 
-    if (activeScene === 6) {
-      // Scene 6: Position at center, slowly rotating
+    // Lerp squishy scale back to normal
+    setPulseScale((prev) => THREE.MathUtils.lerp(prev, 1, 0.08));
+
+    // Glow and grow state when accepted
+    const baseScale = isAccepted ? 1.55 : 1.0;
+    const scaleFactor = baseScale * pulseScale;
+    meshRef.current.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    if (activeScene >= 9) {
+      // Scene 9+: Heart centered
       meshRef.current.position.x = 0;
-      meshRef.current.position.y = 0.3;
+      meshRef.current.position.y = 0.35;
       meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, -3.2, 0.05);
 
-      const time = state.clock.getElapsedTime();
-      meshRef.current.rotation.y = time * 0.4;
-      meshRef.current.rotation.x = Math.sin(time * 0.5) * 0.1;
-    } else if (activeScene === 5) {
-      // Scene 5 (Spaceship Journey): Heart Planet starts to appear in the distance
+      meshRef.current.rotation.y = time * 0.35;
+      meshRef.current.rotation.x = Math.sin(time * 0.4) * 0.08;
+    } else if (activeScene === 7) {
+      // Scene 7 (Spaceship Journey): heart moves into view
       meshRef.current.position.x = 0;
       meshRef.current.position.y = 0.3;
-      meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, -18, 0.05);
+      meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, -12, 0.04);
       meshRef.current.rotation.y += 0.2 * delta;
     } else {
       // Hide
@@ -51,28 +60,42 @@ export default function HeartPlanet({ activeScene }) {
     }
   });
 
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (activeScene < 7) return;
+
+    setPulseScale(1.3); // Pulse squish!
+    const nextVal = clickCount + 1;
+    setClickCount(nextVal);
+
+    if (nextVal === 3 && onHeartClick3Times) {
+      onHeartClick3Times();
+    }
+  };
+
   return (
     <group>
       <mesh 
         ref={meshRef} 
         geometry={heartGeometry} 
         position={[0, 0.3, -50]}
+        onClick={handleClick}
       >
         <meshStandardMaterial
           color="#ec4899"
-          emissive="#be185d"
-          emissiveIntensity={1.2}
-          roughness={0.2}
+          emissive={isAccepted ? "#db2777" : "#be185d"}
+          emissiveIntensity={isAccepted ? 2.5 : 1.2}
+          roughness={0.15}
           metalness={0.8}
         />
       </mesh>
       
-      {/* Dynamic light inside/behind the heart planet for extra glow aura */}
-      {activeScene >= 5 && (
+      {/* Aura Light source */}
+      {activeScene >= 7 && (
         <pointLight 
-          position={[0, 0.3, activeScene === 6 ? -3 : -17]} 
-          intensity={activeScene === 6 ? 4 : 1.5} 
-          distance={10} 
+          position={[0, 0.3, activeScene >= 9 ? -3 : -11]} 
+          intensity={isAccepted ? 8 : (activeScene >= 9 ? 4 : 1.5)} 
+          distance={12} 
           color="#ec4899" 
         />
       )}

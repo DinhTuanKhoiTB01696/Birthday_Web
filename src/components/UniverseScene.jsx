@@ -1,46 +1,51 @@
 import React, { useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import StarField from '../three/StarField';
-import PhotoCards from '../three/PhotoCards';
 import Planets from '../three/Planets';
+import PhotoCards from '../three/PhotoCards';
 import Spaceship from '../three/Spaceship';
 import HeartPlanet from '../three/HeartPlanet';
 
 function CameraController({ activeScene }) {
-  const { camera } = useThree();
   const lookTarget = useRef(new THREE.Vector3(0, 0, 0));
 
-  useFrame((state) => {
-    const targetPos = new THREE.Vector3(0, 0, 6);
-    const targetLook = new THREE.Vector3(0, 0, 0);
+  useFrame(({ camera }) => {
+    let targetPos = new THREE.Vector3(0, 0, 6);
+    let targetLook = new THREE.Vector3(0, 0, 0);
 
     switch (activeScene) {
-      case 1:
-      case 2:
-        const t = state.clock.getElapsedTime();
-        // Slow drift movement on landing screens
-        targetPos.set(Math.sin(t * 0.15) * 0.4, Math.cos(t * 0.1) * 0.3, 6);
+      case 1: // Start Screen
+      case 2: // Typing Intro
+        targetPos.set(0, 0, 75); // pulled far away in the galaxy
         targetLook.set(0, 0, 0);
         break;
-      case 3:
+      case 3: // Universe captions drift
+        targetPos.set(0, 0.4, 5.5);
+        targetLook.set(0, 0.1, -1);
+        break;
+      case 4: // Constellation Map
         targetPos.set(0, 0, 4.8);
         targetLook.set(0, 0, 0);
         break;
-      case 4:
-        // Gallery mode: zoom in closer to inspect the floating cards
-        targetPos.set(0, 0.2, 2.2);
-        targetLook.set(0, 0.2, -3);
+      case 5: // Memory Capsules interaction
+        targetPos.set(0, 0.3, 4.2);
+        targetLook.set(0, 0.1, -2);
         break;
-      case 5:
-        // Follow-camera behind/above the spaceship looking forward
-        targetPos.set(0, 0.7, -1);
-        targetLook.set(0, 0.1, -4.5);
+      case 6: // Warp Climax
+        targetPos.set(0, 0, 3.6);
+        targetLook.set(0, 0, -2);
         break;
-      case 6:
-        // Centered directly on the heart planet
-        targetPos.set(0, 0.2, 1.8);
-        targetLook.set(0, 0.3, -3.2);
+      case 7: // Spaceship Journey
+        targetPos.set(0, 0.8, 3.8); // slight offset overhead follow
+        targetLook.set(0, 0, -3);
+        break;
+      case 8: // YouTube video scene
+      case 9: // Interactive Letter
+      case 10: // Proposal Choice
+      case 11: // Contact & Final accepted
+        targetPos.set(0, 0.35, 2.2); // zoom close to heart planet
+        targetLook.set(0, 0.35, -2);
         break;
       default:
         break;
@@ -54,7 +59,10 @@ function CameraController({ activeScene }) {
   return null;
 }
 
-export default function UniverseScene({ activeScene, focusedIndex, starSpeed }) {
+export default function UniverseScene({ activeScene, activeCapsule, setActiveCapsule, openedCapsules = [], isAccepted, onHeartClick3Times }) {
+  // Speed multiplier dynamic mappings based on cues
+  const starSpeed = activeScene === 6 ? 4.5 : (activeScene === 7 ? 9 : 1);
+
   return (
     <div 
       className="canvas-container" 
@@ -69,7 +77,7 @@ export default function UniverseScene({ activeScene, focusedIndex, starSpeed }) 
       }}
     >
       <Canvas
-        camera={{ position: [0, 0, 6], fov: 50 }}
+        camera={{ position: [0, 0, 75], fov: 50 }}
         dpr={[1, 2]}
         gl={{
           antialias: true,
@@ -79,34 +87,47 @@ export default function UniverseScene({ activeScene, focusedIndex, starSpeed }) 
       >
         <CameraController activeScene={activeScene} />
 
-        {/* Ambient base lighting */}
-        <ambientLight intensity={0.4} />
+        {/* Ambient lighting */}
+        <ambientLight intensity={isAccepted ? 0.7 : 0.4} />
 
-        {/* Dynamic primary light */}
+        {/* Primary light source */}
         <directionalLight 
           position={[5, 5, 5]} 
-          intensity={1} 
-          color="#ffffff" 
+          intensity={isAccepted ? 1.8 : 1.0} 
+          color={isAccepted ? "#fdbaf8" : "#ffffff"} 
         />
 
-        {/* Colored side lights for cosmic color bleed */}
-        <pointLight position={[-8, 4, -5]} intensity={1.5} color="#6d28d9" />
-        <pointLight position={[8, -4, -5]} intensity={1.5} color="#2563eb" />
+        {/* Side cosmic bleed lights */}
+        <pointLight position={[-8, 4, -5]} intensity={1.5} color={isAccepted ? "#db2777" : "#6d28d9"} />
+        <pointLight position={[8, -4, -5]} intensity={1.5} color={isAccepted ? "#f472b6" : "#2563eb"} />
 
-        {/* Star Particle Field */}
+        {/* Star Field */}
         <StarField speedMultiplier={starSpeed} />
 
-        {/* Rotating ambient cosmic planets - only in Scene 3 and 4 */}
-        {activeScene >= 3 && activeScene <= 4 && <Planets />}
+        {/* Rotating ambient cosmic planets */}
+        {activeScene >= 3 && activeScene <= 5 && <Planets />}
 
-        {/* Floating gallery cards - appears from Scene 3 onwards, moves away in Scene 5 */}
-        {activeScene >= 3 && <PhotoCards activeScene={activeScene} focusedIndex={focusedIndex} />}
+        {/* Floating memory capsules (PhotoCards) */}
+        {activeScene >= 5 && activeScene <= 6 && (
+          <PhotoCards 
+            activeScene={activeScene} 
+            activeCapsule={activeCapsule} 
+            setActiveCapsule={setActiveCapsule} 
+            openedCapsules={openedCapsules}
+          />
+        )}
 
-        {/* Flying spaceship geometry - only in Scene 5 */}
-        {activeScene === 5 && <Spaceship activeScene={activeScene} />}
+        {/* Flying spaceship */}
+        {activeScene === 7 && <Spaceship activeScene={activeScene} />}
 
-        {/* Confession Heart shape planet - appears in Scene 5 and focuses in Scene 6 */}
-        {activeScene >= 5 && <HeartPlanet activeScene={activeScene} />}
+        {/* Confession Heart shape planet */}
+        {activeScene >= 7 && (
+          <HeartPlanet 
+            activeScene={activeScene} 
+            isAccepted={isAccepted} 
+            onHeartClick3Times={onHeartClick3Times} 
+          />
+        )}
       </Canvas>
     </div>
   );

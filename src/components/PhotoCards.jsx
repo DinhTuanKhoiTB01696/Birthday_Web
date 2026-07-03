@@ -39,7 +39,7 @@ const createFallbackTexture = (captionText) => {
 
   // Polaroid Caption Text
   ctx.fillStyle = '#f8fafc';
-  ctx.font = 'italic 20px Georgia, serif';
+  ctx.font = '500 16px sans-serif'; // Clean sans-serif, non-italic to prevent Vietnamese diacritic split bugs on canvas
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
