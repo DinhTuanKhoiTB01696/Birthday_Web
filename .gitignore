@@ -9,3 +9,12 @@ yarn-error.log*
 pnpm-debug.log*
 .DS_Store
 Thumbs.db
+
+# Heavy raw birthday assets (prevent pushing 94MB zip & raw photos to git)
+public/assets/images/anh_an/Ảnh của Ân-20260705T100622Z-3-001.zip
+public/assets/images/anh_an/raw/
+
+# Auto-processing utility scripts
+scripts/process-assets.js
+scripts/process-assets.cjs
+run-process.bat

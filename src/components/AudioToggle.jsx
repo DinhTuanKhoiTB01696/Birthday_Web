@@ -1,45 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function AudioToggle({ isPlaying, onToggle }) {
+export default function AudioToggle({ isPlaying, isMuted, volume, onToggle, onMute, onVolumeChange }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <button 
-      className="audio-toggle-btn"
-      onClick={onToggle}
-      aria-label="Toggle Audio"
-    >
-      {isPlaying ? (
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="20" 
-          height="20" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-        </svg>
-      ) : (
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="20" 
-          height="20" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-          <line x1="22" y1="9" x2="16" y2="15"></line>
-          <line x1="16" y1="9" x2="22" y2="15"></line>
-        </svg>
+    <div className={`audio-control ${expanded ? 'expanded' : ''}`}>
+      <button
+        className="audio-icon-btn"
+        type="button"
+        onClick={onToggle}
+        aria-label={isPlaying ? 'Tạm dừng nhạc' : 'Phát nhạc'}
+      >
+        {isPlaying ? '♪' : '▷'}
+      </button>
+      <button
+        className="audio-icon-btn"
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        aria-label="Mở điều khiển âm lượng"
+      >
+        ⋯
+      </button>
+      {expanded && (
+        <div className="audio-popover">
+          <button type="button" onClick={onMute}>
+            {isMuted ? 'Bật tiếng' : 'Tắt tiếng'}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            onChange={(event) => onVolumeChange(Number(event.target.value))}
+            aria-label="Âm lượng"
+          />
+        </div>
       )}
-    </button>
+    </div>
   );
 }

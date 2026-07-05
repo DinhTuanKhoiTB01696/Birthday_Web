@@ -1,20 +1,36 @@
+import { anPhotoManifest } from './photoManifest.js';
+
+const anecdotesOnly = (arr) => arr.filter(p => p.type !== 'video');
+
 export const birthdayConfig = {
-  recipientName: "Trần Phạm Hồng Ân",
+  recipientName: "Tran Pham Hong An",
+  displayName: "Trần Phạm Hồng Ân",
   shortName: "Ân",
   senderName: "Khôi",
   birthday: "2008-07-10",
   age: 18,
 
+  storySteps: [
+    { id: 1, label: "Bắt đầu", shortLabel: "Start" },
+    { id: 2, label: "Code", shortLabel: "Code" },
+    { id: 3, label: "Vũ trụ", shortLabel: "Vũ trụ" },
+    { id: 4, label: "Chòm sao", shortLabel: "Sao" },
+    { id: 5, label: "Ký ức", shortLabel: "Ký ức" },
+    { id: 8, label: "Trái tim", shortLabel: "Tim" },
+    { id: 9, label: "Thư", shortLabel: "Thư" },
+    { id: 10, label: "Kết", shortLabel: "Kết" }
+  ],
+
   universeCaptions: [
-    "Khôi không biết bắt đầu từ đâu...",
-    "Nhưng có lẽ là từ nụ cười của Ân.",
-    "Một nụ cười làm mọi thứ xung quanh trở nên nhẹ nhàng hơn.",
-    "Khôi đã để ý điều đó lâu hơn Ân nghĩ."
+    "Tui không biết bắt đầu từ đâu.",
+    "Có lẽ là từ nụ cười của bà.",
+    "Một nụ cười làm mọi thứ xung quanh dịu lại hơn một chút.",
+    "Và tui đã để ý điều đó lâu hơn bà nghĩ."
   ],
 
   journeyCaptions: [
-    "Chuyến đi này không chỉ để chúc mừng sinh nhật...",
-    "Mà còn để nói một điều Khôi chưa từng đủ can đảm nói ra."
+    "Chuyến đi này không chỉ để chúc mừng sinh nhật bà.",
+    "Nó còn là cách tui gom hết can đảm để nói một điều đã để trong lòng rất lâu."
   ],
 
   unlock: {
@@ -29,14 +45,14 @@ export const birthdayConfig = {
     enabled: true,
     giftQueryKey: "from",
     giftQueryValue: "gift",
-    giftIntroText: "Ân vừa mở một món quà nhỏ từ Khôi..."
+    giftIntroText: "Bà vừa mở một món quà nhỏ từ Khôi..."
   },
 
   music: {
     enabled: true,
     title: "Tìm Em - Hngle ft. Bảo Anh",
     sourceReference: "https://youtu.be/gJAbDSse5WM?si=Uh9ZfpRNGtlu0q2T",
-    sourceNote: "User provided a local WebM audio file.",
+    sourceNote: "User provided a local WebA audio file.",
     path: "/assets/music/videoplayback.weba",
     cues: {
       startAt: 0,
@@ -46,30 +62,29 @@ export const birthdayConfig = {
       memoryGalleryAt: 48,
       climaxAt: 58,
       spaceshipAt: 76,
-      youtubeVideoAt: 92,
+      heartAt: 92,
       finalLetterAt: 106,
       finalConfessionAt: 122
     },
-    volume: 0.75,
-    fadeInDuration: 2500,
-    fadeOutDuration: 3000
+    volume: 0.72,
+    fadeInDuration: 1800
   },
 
   intro: {
-    title: "Một Vũ Trụ Nhỏ Dành Cho Ân",
-    subtitle: "Có những điều không dễ nói bằng lời, nên Khôi tạo ra một vũ trụ nhỏ này để dành riêng cho Ân...",
+    title: "Một vũ trụ nhỏ dành cho Ân",
+    subtitle: "Có vài điều tui nói ngoài đời hơi vụng. Nên tui làm một chuyến đi nhỏ này để bà đọc chậm thôi, nghe nhạc, rồi biết lòng tui một chút.",
     buttonText: "Bắt đầu chuyến đi"
   },
 
   typingLines: [
     "Initializing birthday universe...",
-    "Loading memories...",
+    "Loading tiny memories...",
     "Searching for the brightest smile...",
     "Found: Trần Phạm Hồng Ân",
+    "Saving courage...",
     "Preparing stars...",
-    "Preparing photos...",
     "Preparing one honest message...",
-    "Syncing with the music...",
+    "Keeping the music alive...",
     "Launching in 3...",
     "2...",
     "1..."
@@ -77,91 +92,102 @@ export const birthdayConfig = {
 
   constellation: [
     {
-      title: "Nụ cười rạng rỡ",
-      message: "Có những nụ cười làm người khác nhớ rất lâu."
+      title: "Nụ cười",
+      message: "Nụ cười của bà có cái kiểu làm ngày bình thường tự nhiên sáng hơn."
     },
     {
       title: "Sự vui tươi",
-      message: "Khôi thích cách Ân luôn vui tươi theo cách rất riêng."
+      message: "Tui thích cách bà vui tươi, không ồn ào quá, nhưng đủ làm người khác thấy nhẹ lòng."
     },
     {
       title: "Sự chăm chỉ",
-      message: "Khôi quý sự chăm chỉ của Ân."
+      message: "Bà chăm chỉ theo cách rất riêng. Tui để ý điều đó nhiều hơn bà tưởng."
     },
     {
       title: "Sự siêng năng",
-      message: "Khôi thấy Ân đặc biệt vì Ân luôn dành thời gian cho những điều tốt đẹp."
+      message: "Có những lúc nhìn bà cố gắng, tui thấy bà đáng quý thật sự."
     },
     {
       title: "Sự tốt bụng",
-      message: "Có những điều nhỏ thôi, nhưng lại làm Khôi để ý rất lâu."
+      message: "Những điều nhỏ bà làm cho người khác, tui vẫn nhớ."
     },
     {
-      title: "Cảm giác tích cực",
-      message: "Ân làm mọi thứ xung quanh trở nên nhẹ nhàng hơn."
+      title: "Lớp phó dễ thương",
+      message: "Chi tiết này chỉ nhắc một lần thôi nha, nhưng đúng là tui thấy bà dễ thương từ mấy điều nhỏ như vậy."
     }
   ],
 
   photos: [
     {
-      src: "/assets/images/an-01.jpg",
-      caption: "Nụ cười rạng rỡ nhất trong vũ trụ nhỏ này."
+      src: "/assets/images/anh_an/framed/IMG_4822.JPG_framed.webp",
+      cleanSrc: "/assets/images/anh_an/clean/IMG_4822.JPG_clean.webp",
+      caption: "Nụ cười rạng rỡ nhất trong vũ trụ nhỏ này.",
+      original: "/assets/images/anh_an/raw/IMG_4822.JPG"
     },
     {
-      src: "/assets/images/an-02.jpg",
-      caption: "Có những khoảnh khắc nhỏ nhưng làm Khôi nhớ rất lâu."
+      src: "/assets/images/anh_an/33_cropped.png",
+      cleanSrc: "/assets/images/anh_an/33_cropped.png",
+      caption: "Có những khoảnh khắc nhỏ mà tui nhớ lâu hơn bà nghĩ.",
+      original: "/assets/images/anh_an/33_cropped.png"
     },
     {
-      src: "/assets/images/an-03.jpg",
-      caption: "Một ánh nhìn, một nụ cười, cũng đủ làm ngày hôm đó đặc biệt."
+      src: "/assets/images/anh_an/34_cropped.png",
+      cleanSrc: "/assets/images/anh_an/34_cropped.png",
+      caption: "Một ánh nhìn, một nụ cười, cũng đủ làm hôm đó đặc biệt.",
+      original: "/assets/images/anh_an/34_cropped.png"
     },
     {
-      src: "/assets/images/memory-01.jpg",
-      caption: "Một kỷ niệm nhỏ dành riêng cho chuyến đi này."
+      src: "/assets/images/anh_an/framed/IMG_1081_framed.webp",
+      cleanSrc: "/assets/images/anh_an/clean/IMG_1081_clean.webp",
+      caption: "Một kỷ niệm nhỏ tui cất riêng cho chuyến đi này.",
+      original: "/assets/images/anh_an/raw/IMG_1081.heic"
     },
     {
-      src: "/assets/images/memory-02.jpg",
-      caption: "Từng mảnh ký ức về Ân đều lấp lánh như những vì sao."
+      src: "/assets/images/anh_an/framed/IMG_2497_framed.webp",
+      cleanSrc: "/assets/images/anh_an/clean/IMG_2497_clean.webp",
+      caption: "Từng mảnh ký ức về Ân đều lấp lánh theo cách rất riêng.",
+      original: "/assets/images/anh_an/raw/IMG_2497.heic"
     }
   ],
 
-  youtube: {
-    enabled: false,
-    embedUrl: "",
-    title: "Có một đoạn này Khôi muốn tự nói với Ân...",
-    description: "Nếu Ân muốn, hãy bấm play để nghe Khôi nói vài lời."
+  heart: {
+    lead: "Có một đoạn tui muốn để bà tự mở.",
+    sublead: "Không vội. Cứ để tim hiện ra hết rồi chạm vào nó nha.",
+    hint: "Chạm vào trái tim để mở điều tui muốn nói..."
   },
 
   letter: {
     openButton: "Mở thư",
     nextButton: "Đọc tiếp",
+    backButton: "Quay lại",
+    autoDelayMs: 3600,
     paragraphs: [
       "Chúc mừng sinh nhật tuổi 18, Trần Phạm Hồng Ân.",
-      "Anh không biết mình có phải là người giỏi nói những lời thật đẹp hay không.",
-      "Nhưng anh biết một điều là anh đã *thích em từ rất lâu rồi*.",
-      "Anh thích nụ cười rạng rỡ của em, thích sự vui tươi của em, thích cách em chăm chỉ, siêng năng và luôn dành thời gian cho những điều tốt đẹp.",
-      "Có thể anh chưa hiểu nhiều về giáo xứ như em, cũng chưa giỏi thể hiện tình cảm của mình.",
-      "Nhưng hơn một năm qua, em vẫn luôn là người khiến anh để ý, khiến anh muốn trở nên tốt hơn, và khiến anh muốn một lần thật lòng nói ra:",
-      "Anh thích em.",
-      "Không phải là một cảm xúc nhất thời, mà là một tình cảm đã ở trong anh từ rất lâu.",
-      "Nếu em cho phép, anh muốn được tìm hiểu em nhiều hơn, theo cách *chân thành và nghiêm túc nhất*.",
+      "Tui không biết mình có phải là người giỏi nói những lời thật đẹp hay không.",
+      "Nhưng tui biết một điều là tui đã *thích bà từ rất lâu rồi*.",
+      "Tui thích nụ cười rạng rỡ của bà, thích sự vui tươi của bà, thích cách bà chăm chỉ, siêng năng và luôn dành thời gian cho những điều tốt đẹp.",
+      "Có thể tui chưa hiểu nhiều về giáo xứ như bà, cũng chưa giỏi thể hiện tình cảm của mình.",
+      "Nhưng hơn một năm qua, bà vẫn luôn là người khiến tui để ý, khiến tui muốn trở nên tốt hơn, và khiến tui muốn một lần thật lòng nói ra:",
+      "Tui thích bà.",
+      "Không phải là một cảm xúc nhất thời, mà là một tình cảm đã ở trong tui từ rất lâu.",
+      "Nếu bà cho phép, tui muốn được tìm hiểu bà nhiều hơn, theo cách *chân thành và nghiêm túc nhất*.",
       "Một vũ trụ nhỏ này, Khôi dành tặng cho Ân."
     ]
   },
 
   proposal: {
     enabled: true,
-    acceptText: "Em đồng ý",
-    rejectText: "Không đồng ý",
-    rejectEscapeText: "Thôi cho em suy nghĩ thêm cũng được...",
-    maxRejectEscapes: 5,
-    afterRejectText: "Dù câu trả lời là gì, Khôi vẫn cảm ơn Ân vì đã đọc món quà này.",
-    acceptedText: "Cảm ơn Ân vì đã đọc đến đây. Khôi chờ tin nhắn của Ân nha."
+    acceptText: "Bà đồng ý",
+    rejectText: "Chưa đồng ý",
+    rejectEscapeText: "Để bà suy nghĩ thêm cũng được...",
+    maxRejectEscapes: 4,
+    afterRejectText: "Dù câu trả lời là gì, tui vẫn cảm ơn bà vì đã đọc hết món quà này.",
+    acceptedText: "Cảm ơn bà vì đã đọc đến đây. Tui chờ tin nhắn của bà nha."
   },
 
   contact: {
     zaloUrl: "https://zalo.me/0397839394",
     messengerUrl: "https://www.facebook.com/messages/t/100066946030514",
-    finalText: "Khi đọc xong, Ân có thể nhắn cho Khôi ở đây nha."
+    finalText: "Khi đọc xong, bà có thể nhắn cho tui ở đây nha."
   }
 };

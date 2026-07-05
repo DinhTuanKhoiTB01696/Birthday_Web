@@ -2,80 +2,61 @@ import React from 'react';
 import { birthdayConfig } from '../data/content';
 
 export default function StartScreen({ onStart }) {
-  // Parse query parameter dynamically using content config parameters
   const urlParams = new URLSearchParams(window.location.search);
   const isFromGift = urlParams.get(birthdayConfig.qr.giftQueryKey) === birthdayConfig.qr.giftQueryValue;
 
   return (
-    <div 
-      className="ui-overlay fade-in" 
-      style={{ 
-        background: 'radial-gradient(circle at center, rgba(10, 5, 30, 0.55) 0%, rgba(3, 0, 20, 1) 100%)',
-        pointerEvents: 'auto',
-        zIndex: 20 
-      }}
-    >
-      <div 
-        style={{
-          maxWidth: '650px',
-          width: '90%',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '28px'
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Subtle uppercase monospaced tag */}
-          <span 
-            style={{ 
-              fontFamily: 'var(--font-sans)', 
-              fontSize: '0.72rem', 
-              letterSpacing: '0.35em', 
-              textTransform: 'uppercase', 
-              color: isFromGift ? '#ec4899' : 'var(--text-muted)',
-              fontWeight: isFromGift ? '500' : '400'
-            }}
-          >
-            {isFromGift ? birthdayConfig.qr.giftIntroText : "A Little Space For"}
+    <section className="ui-overlay fade-in" style={{
+      background: 'radial-gradient(circle at center, rgba(15, 23, 42, 0.48) 0%, rgba(3, 0, 20, 0.98) 72%)',
+      pointerEvents: 'auto',
+      zIndex: 20
+    }}>
+      <div style={{
+        width: 'min(650px, calc(100vw - 32px))',
+        maxHeight: 'calc(100svh - 70px)',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 'clamp(18px, 4svh, 28px)'
+      }}>
+        <div style={{ display: 'grid', gap: '12px' }}>
+          <span style={{
+            fontSize: '0.72rem',
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: isFromGift ? '#f9a8d4' : 'var(--text-muted)'
+          }}>
+            {isFromGift ? birthdayConfig.qr.giftIntroText : 'A little space for'}
           </span>
-          <h1 
-            style={{ 
-              fontSize: '3.5rem', 
-              margin: 0, 
-              fontWeight: '400',
-              lineHeight: '1.15',
-              color: 'var(--text-white)'
-            }}
-          >
-            Một Vũ Trụ Nhỏ
+          <h1 style={{
+            fontSize: 'clamp(2.25rem, 11vw, 4.4rem)',
+            margin: 0,
+            fontWeight: 500,
+            color: 'var(--text-white)'
+          }}>
+            Một vũ trụ nhỏ
             <br />
-            Dành Cho <span style={{ fontStyle: 'italic', fontFamily: 'var(--font-serif)', color: '#ec4899' }}>Ân</span>
+            dành cho <em style={{ color: '#f9a8d4', fontStyle: 'italic' }}>Ân</em>
           </h1>
         </div>
 
-        <p 
-          style={{ 
-            fontSize: '1rem', 
-            color: 'var(--text-muted)', 
-            margin: 0,
-            maxWidth: '560px',
-            lineHeight: '1.8',
-            textWrap: 'balance'
-          }}
-        >
+        <p style={{
+          fontSize: 'clamp(0.95rem, 3.4vw, 1.08rem)',
+          color: 'var(--text-muted)',
+          margin: 0,
+          maxWidth: '52ch',
+          lineHeight: 1.7,
+          textWrap: 'balance'
+        }}>
           {birthdayConfig.intro.subtitle}
         </p>
 
-        <button 
-          className="btn-glow" 
-          onClick={onStart}
-          style={{ marginTop: '12px' }}
-        >
+        <button className="btn-glow" onClick={onStart}>
           {birthdayConfig.intro.buttonText}
         </button>
       </div>
-    </div>
+    </section>
   );
 }

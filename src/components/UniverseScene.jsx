@@ -28,13 +28,13 @@ function CameraController({ activeScene }) {
         targetPos.set(0, 0, 4.8);
         targetLook.set(0, 0, 0);
         break;
-      case 5: // Memory Capsules interaction
-        targetPos.set(0, 0.3, 4.2);
-        targetLook.set(0, 0.1, -2);
+      case 5: // Solar System — Memory Capsules interaction
+        targetPos.set(0, 2.8, 2.0); // elevated overhead view of the solar system
+        targetLook.set(0, 0, -5); // look at the Sun center
         break;
-      case 6: // Warp Climax
-        targetPos.set(0, 0, 3.6);
-        targetLook.set(0, 0, -2);
+      case 6: // Warp Climax — Solar system zoomed out
+        targetPos.set(0, 3.5, 1.0); // wider overhead view
+        targetLook.set(0, 0, -5);
         break;
       case 7: // Spaceship Journey
         targetPos.set(0, 0.8, 3.8); // slight offset overhead follow
@@ -59,7 +59,16 @@ function CameraController({ activeScene }) {
   return null;
 }
 
-export default function UniverseScene({ activeScene, activeCapsule, setActiveCapsule, openedCapsules = [], isAccepted, onHeartClick3Times }) {
+export default function UniverseScene({ 
+  activeScene, 
+  activeCapsule, 
+  setActiveCapsule, 
+  openedCapsules = [], 
+  isAccepted, 
+  isTunnelActive, 
+  onHeartClick, 
+  onHeartClick3Times 
+}) {
   // Speed multiplier dynamic mappings based on cues
   const starSpeed = activeScene === 6 ? 4.5 : (activeScene === 7 ? 9 : 1);
 
@@ -71,7 +80,8 @@ export default function UniverseScene({ activeScene, activeCapsule, setActiveCap
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100svh',
+        minHeight: '100dvh',
         zIndex: 1,
         pointerEvents: 'none'
       }}
@@ -84,6 +94,7 @@ export default function UniverseScene({ activeScene, activeCapsule, setActiveCap
           alpha: true,
           powerPreference: 'high-performance'
         }}
+        style={{ pointerEvents: 'auto' }}
       >
         <CameraController activeScene={activeScene} />
 
@@ -104,8 +115,8 @@ export default function UniverseScene({ activeScene, activeCapsule, setActiveCap
         {/* Star Field */}
         <StarField speedMultiplier={starSpeed} />
 
-        {/* Rotating ambient cosmic planets */}
-        {activeScene >= 3 && activeScene <= 5 && <Planets />}
+        {/* Rotating ambient cosmic planets (hide when solar system is active) */}
+        {activeScene >= 3 && activeScene <= 4 && <Planets />}
 
         {/* Floating memory capsules (PhotoCards) */}
         {activeScene >= 5 && activeScene <= 6 && (
@@ -121,7 +132,7 @@ export default function UniverseScene({ activeScene, activeCapsule, setActiveCap
         {activeScene === 7 && <Spaceship activeScene={activeScene} />}
 
         {/* Confession Heart shape planet */}
-        {activeScene >= 7 && (
+        {activeScene >= 7 && activeScene !== 8 && (
           <HeartPlanet 
             activeScene={activeScene} 
             isAccepted={isAccepted} 

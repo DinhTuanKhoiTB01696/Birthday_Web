@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import UniverseScene from './components/UniverseScene';
 import StartScreen from './components/StartScreen';
 import TypingIntro from './components/TypingIntro';
@@ -8,64 +8,87 @@ import ProposalChoice from './components/ProposalChoice';
 import LockedGate from './components/LockedGate';
 import AudioToggle from './components/AudioToggle';
 import Confetti from './components/Confetti';
+import StoryMap from './components/StoryMap';
+import JourneyControls from './components/JourneyControls';
+import HeartReveal from './components/HeartReveal';
 import { useAudio } from './hooks/useAudio';
 import { birthdayConfig } from './data/content';
 import './styles/global.css';
 
+const STORAGE_KEY = 'birthday_web_journey_v2';
+
+const clampScene = (scene) => Math.max(1, Math.min(11, scene));
+
+const getReadableDuration = (text, min = 4200, max = 9000) => {
+  const value = (text?.length || 80) * 62 + 1500;
+  return Math.max(min, Math.min(max, value));
+};
+
 export default function App() {
   const [gateUnlocked, setGateUnlocked] = useState(true);
-  const [scene, setScene] = useState(1);
+  const [scene, setSceneState] = useState(1);
+  const [maxSceneReached, setMaxSceneReached] = useState(1);
   const [activeCapsule, setActiveCapsule] = useState(null);
   const [openedCapsules, setOpenedCapsules] = useState([]);
+  const [openedConstellations, setOpenedConstellations] = useState([]);
+  const [letterPage, setLetterPage] = useState(0);
   const [isAccepted, setIsAccepted] = useState(false);
-  const [isRejected, setIsRejected] = useState(false);
 
-  // Easter egg states
-  const [easterEggText, setEasterEggText] = useState("");
+  const [easterEggText, setEasterEggText] = useState('');
   const [popupMessage, setPopupMessage] = useState(null);
   const [isBirthdayMode, setIsBirthdayMode] = useState(false);
   const [isAfterBirthday, setIsAfterBirthday] = useState(false);
-
-  // Scene-specific elapsed timer state to run transitions independently of audio stream state
   const [sceneTime, setSceneTime] = useState(0);
+  const [isTunnelActive, setIsTunnelActive] = useState(false);
 
-  // Audio Sync Engine hook
-  const { isPlaying, currentTime, isMuted, play, pause, toggle, toggleMute, setTime } = useAudio();
-  const cues = birthdayConfig.music.cues;
+  const { isPlaying, isMuted, volume, play, toggle, toggleMute, setVolume } = useAudio();
 
-  // Track elapsed seconds since current scene mounted
+  const setScene = useCallback((nextScene) => {
+    const normalized = clampScene(nextScene);
+    setSceneState(normalized);
+    setMaxSceneReached((prev) => Math.max(prev, normalized));
+    setIsTunnelActive(false); // Reset tunnel when navigating scenes
+  }, []);
+
+  const resetJourney = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    setSceneState(1);
+    setMaxSceneReached(1);
+    setActiveCapsule(null);
+    setOpenedCapsules([]);
+    setOpenedConstellations([]);
+    setLetterPage(0);
+    setIsAccepted(false);
+  }, []);
+
   useEffect(() => {
     setSceneTime(0);
-    const interval = setInterval(() => {
+    const interval = window.setInterval(() => {
       setSceneTime((prev) => prev + 0.1);
     }, 100);
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
   }, [scene]);
 
-  // Date constraints check
   useEffect(() => {
     const isLocked = birthdayConfig.unlock.enabled &&
       Date.now() < new Date(birthdayConfig.unlock.softUnlockAt).getTime() &&
       localStorage.getItem('dev_bypass_lock') !== 'true';
     setGateUnlocked(!isLocked);
 
-    // Birthday Mode (10 July 2026 check)
     const today = new Date();
-    const isJuly10 = today.getMonth() === 6 && today.getDate() === 10;
-    setIsBirthdayMode(isJuly10);
+    setIsBirthdayMode(today.getMonth() === 6 && today.getDate() === 10);
 
     const bdayTime = new Date(birthdayConfig.unlock.birthdayAt).getTime();
     setIsAfterBirthday(Date.now() > bdayTime);
   }, []);
 
-  // Keyboard Easter Egg Key Listener
   useEffect(() => {
     const handleKeyPress = (e) => {
       const char = e.key.toUpperCase();
       setEasterEggText((prev) => {
         const next = (prev + char).slice(-2);
-        if (next === "AN" || next === "ÂN") {
-          setPopupMessage("Vũ trụ nhỏ bắn tim gửi tới Ân! 💖 (Sao băng hình trái tim đã được kích hoạt)");
+        if (next === 'AN' || next === 'ÂN') {
+          setPopupMessage('Tui gửi riêng một vì sao nhỏ cho Ân. Bà thấy chưa, nó sáng hơn mấy vì sao còn lại đó.');
         }
         return next;
       });
@@ -74,651 +97,306 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Timer-based transitions for automatic story scenes
   useEffect(() => {
     let timer;
     if (scene === 3) {
-      timer = setTimeout(() => {
-        setScene(4);
-      }, 8000); // 8 seconds for Universe captions
+      const total = birthdayConfig.universeCaptions.reduce((sum, caption) => sum + getReadableDuration(caption), 0);
+      timer = window.setTimeout(() => setScene(4), total + 900);
     } else if (scene === 6) {
-      timer = setTimeout(() => {
-        setScene(7);
-      }, 5000); // 5 seconds for Climax zoom warp
+      timer = window.setTimeout(() => setScene(7), 6800);
     } else if (scene === 7) {
-      timer = setTimeout(() => {
-        if (birthdayConfig.youtube.enabled && birthdayConfig.youtube.embedUrl) {
-          setScene(8);
-        } else {
-          setScene(9);
-        }
-      }, 10000); // 10 seconds for Spaceship flight journey
+      const total = birthdayConfig.journeyCaptions.reduce((sum, caption) => sum + getReadableDuration(caption, 5200, 8600), 0);
+      timer = window.setTimeout(() => setScene(8), total + 900);
     }
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) window.clearTimeout(timer);
     };
-  }, [scene]);
+  }, [scene, setScene]);
+
+  useEffect(() => {
+    if (scene !== 5) return undefined;
+    setActiveCapsule(0);
+    setOpenedCapsules((prev) => (prev.includes(0) ? prev : [...prev, 0]));
+
+    let index = 0;
+    const interval = window.setInterval(() => {
+      index += 1;
+      if (index >= birthdayConfig.photos.length) {
+        window.clearInterval(interval);
+        window.setTimeout(() => {
+          setActiveCapsule(null);
+          setScene(6);
+        }, 2200);
+        return;
+      }
+      setActiveCapsule(index);
+      setOpenedCapsules((prev) => (prev.includes(index) ? prev : [...prev, index]));
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [scene, setScene]);
 
   const startJourney = () => {
+    resetJourney();
     play();
     setScene(2);
   };
 
-  const completeIntro = () => {
-    setScene(3);
-  };
 
-  // Tracking opened capsules (PhotoCards)
-  const handleSelectCapsule = (idx) => {
-    if (idx !== null) {
-      // Enforce sequential unlocking
-      const isUnlocked = idx === 0 || openedCapsules.includes(idx - 1);
-      if (!isUnlocked) return;
+
+  const goBack = () => {
+    if (scene === 5) {
+      setActiveCapsule(null);
+      setScene(4);
+      return;
     }
-    setActiveCapsule(idx);
-    if (idx !== null && !openedCapsules.includes(idx)) {
-      setOpenedCapsules((prev) => [...prev, idx]);
+    if (scene === 8) {
+      setScene(7);
+      return;
     }
+    if (scene === 10) {
+      setScene(9);
+      return;
+    }
+    if (scene === 11) {
+      setScene(10);
+      return;
+    }
+    setScene(scene - 1);
   };
 
-  const proceedFromCapsules = () => {
-    setActiveCapsule(null);
-    setScene(6);
+  const goNext = () => {
+    if (scene === 7) {
+      setScene(8);
+      return;
+    }
+    if (scene === 8) return;
+    if (scene === 9) {
+      setScene(10);
+      return;
+    }
+    setScene(scene + 1);
   };
 
-  const handleHeartClick3Times = () => {
-    setPopupMessage("Có những điều nhỏ thôi, nhưng Khôi đã nhớ rất lâu. 🌹");
+  const handleHeartClick = () => {
+    if (isTunnelActive) return;
+    setIsTunnelActive(true);
+    // Smooth fade transition, then load Scene 9 (Letter)
+    setTimeout(() => {
+      setScene(9);
+    }, 400);
   };
 
-  // Caption calculations based on scene elapsed time
-  let currentUniverseCaption = "";
-  if (scene === 3) {
-    const count = birthdayConfig.universeCaptions.length;
-    const index = Math.min(Math.floor(sceneTime / 2), count - 1); // 2 seconds per caption (total 8 seconds)
-    currentUniverseCaption = birthdayConfig.universeCaptions[Math.max(0, index)];
-  }
+  const currentUniverseCaption = useMemo(() => {
+    if (scene !== 3) return '';
+    let elapsed = sceneTime * 1000;
+    for (const caption of birthdayConfig.universeCaptions) {
+      const duration = getReadableDuration(caption);
+      if (elapsed <= duration) return caption;
+      elapsed -= duration;
+    }
+    return birthdayConfig.universeCaptions.at(-1);
+  }, [scene, sceneTime]);
 
-  let currentJourneyCaption = "";
-  if (scene === 7) {
-    const count = birthdayConfig.journeyCaptions.length;
-    const index = Math.min(Math.floor(sceneTime / 5), count - 1); // 5 seconds per caption (total 10 seconds)
-    currentJourneyCaption = birthdayConfig.journeyCaptions[Math.max(0, index)];
-  }
+  const currentJourneyCaption = useMemo(() => {
+    if (scene !== 7) return '';
+    let elapsed = sceneTime * 1000;
+    for (const caption of birthdayConfig.journeyCaptions) {
+      const duration = getReadableDuration(caption, 5200, 8600);
+      if (elapsed <= duration) return caption;
+      elapsed -= duration;
+    }
+    return birthdayConfig.journeyCaptions.at(-1);
+  }, [scene, sceneTime]);
 
-  // Underlock gate unmount protection
   if (!gateUnlocked) {
     return <LockedGate onUnlock={() => setGateUnlocked(true)} />;
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-
-      {/* Canvas Layer */}
+    <main className={`app-shell scene-${scene}`}>
       <UniverseScene
         activeScene={scene}
         activeCapsule={activeCapsule}
-        setActiveCapsule={handleSelectCapsule}
+        setActiveCapsule={() => {}}
         openedCapsules={openedCapsules}
         isAccepted={isAccepted}
-        onHeartClick3Times={handleHeartClick3Times}
+        onHeartClick3Times={() => setPopupMessage('Có những điều nhỏ thôi, nhưng tui đã nhớ rất lâu.')}
       />
 
-      {/* Confetti generator overlay */}
       {(isAccepted || isBirthdayMode) && <Confetti active={true} duration={0} />}
 
-      {/* Overlay: Start Screen */}
-      {scene === 1 && (
-        <StartScreen onStart={startJourney} />
-      )}
+      {scene === 1 && <StartScreen onStart={startJourney} />}
+      {scene === 2 && <TypingIntro onComplete={() => setScene(3)} />}
 
-      {/* Overlay: Typing Compiler */}
-      {scene === 2 && (
-        <TypingIntro onComplete={completeIntro} />
-      )}
-
-      {/* Overlay: Scene 3 Universe drift caption display */}
       {scene === 3 && currentUniverseCaption && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            justifyContent: 'flex-end',
-            paddingBottom: '80px',
-            background: 'linear-gradient(to top, rgba(3, 0, 20, 0.7) 0%, rgba(3, 0, 20, 0) 100%)',
-            pointerEvents: 'none'
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              padding: '24px 36px',
-              maxWidth: '680px',
-              width: '90%',
-              textAlign: 'center',
-              boxShadow: '0 0 25px rgba(109, 40, 217, 0.1)'
-            }}
-          >
-            <p
-              style={{
-                fontSize: '1.15rem',
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                margin: 0,
-                color: '#f8fafc',
-                lineHeight: '1.65',
-                textWrap: 'balance'
-              }}
-            >
-              {currentUniverseCaption}
-            </p>
+        <section className="ui-overlay caption-overlay fade-in">
+          <div className="caption-panel glass-panel">
+            <p>{currentUniverseCaption}</p>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Overlay: Scene 4 Constellation Map */}
       {scene === 4 && (
-        <ConstellationMap onComplete={() => {
-          setTime(cues.memoryGalleryAt);
-          setScene(5);
-        }} />
+        <ConstellationMap
+          onProgress={setOpenedConstellations}
+          onComplete={() => setScene(5)}
+        />
       )}
 
-      {/* Overlay: Scene 5 Memory Capsules controller cards */}
       {scene === 5 && (
-        <>
-          {activeCapsule === null && (
-            <div
-              className="ui-overlay"
-              style={{
-                justifyContent: 'flex-end',
-                paddingBottom: '70px',
-                background: 'linear-gradient(to top, rgba(3, 0, 20, 0.75) 0%, rgba(3, 0, 20, 0) 100%)',
-                pointerEvents: 'none'
-              }}
-            >
-              <div
-                className="glass-panel fade-in"
-                style={{
-                  padding: '24px 32px',
-                  maxWidth: '680px',
-                  width: '90%',
-                  textAlign: 'center',
-                  boxShadow: '0 0 25px rgba(236, 72, 153, 0.1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                  alignItems: 'center',
-                  pointerEvents: 'auto'
-                }}
-              >
-                <span style={{ fontSize: '0.72rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                  Những Khoảnh Khắc Đáng Nhớ
-                </span>
-
-                <p
-                  style={{
-                    fontSize: '1.05rem',
-                    fontFamily: 'var(--font-serif)',
-                    fontStyle: 'italic',
-                    margin: 0,
-                    color: '#f8fafc',
-                    lineHeight: '1.65',
-                    textWrap: 'balance'
-                  }}
-                >
-                  {openedCapsules.length === 0 && "👉 Nhấp vào ngôi sao đang nhấp nháy hồng để xem Ký ức thứ 1..."}
-                  {openedCapsules.length > 0 && openedCapsules.length < birthdayConfig.photos.length && `🌟 Đã mở Ký ức ${openedCapsules.length}/${birthdayConfig.photos.length}. Hãy nhấp tiếp vào ngôi sao đang nhấp nháy hồng...`}
-                  {openedCapsules.length === birthdayConfig.photos.length && "💖 Tất cả ký ức đã được mở! Hãy nhấp nút bên dưới để tiếp tục..."}
-                </p>
-
-                {openedCapsules.length === birthdayConfig.photos.length && (
-                  <div style={{ marginTop: '4px' }}>
-                    <button
-                      className="btn-glow"
-                      onClick={proceedFromCapsules}
-                    >
-                      Tiếp tục hành trình
-                    </button>
-                  </div>
-                )}
-              </div>
+        <section className="ui-overlay memory-overlay fade-in">
+          <div className="memory-card glass-panel">
+            <span className="memory-kicker">Ký ức {Math.min((activeCapsule ?? 0) + 1, birthdayConfig.photos.length)} / {birthdayConfig.photos.length}</span>
+            <div className="memory-image-wrap">
+              <img
+                key={activeCapsule}
+                className="memory-photo-fade"
+                src={birthdayConfig.photos[activeCapsule ?? 0]?.cleanSrc || birthdayConfig.photos[activeCapsule ?? 0]?.src}
+                alt="Kỷ niệm của Ân"
+                style={
+                  activeCapsule === 4
+                    ? { objectFit: 'contain', background: '#0a0518', width: '100%', height: '100%' }
+                    : activeCapsule === 0
+                    ? { transform: 'scale(2.0) translateX(25%)', transformOrigin: 'center', objectFit: 'cover' }
+                    : { objectFit: 'cover' }
+                }
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
-          )}
-
-          {activeCapsule !== null && (
-            <div
-              className="ui-overlay fade-in"
-              style={{
-                background: 'rgba(3, 0, 20, 0.85)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                pointerEvents: 'auto',
-                zIndex: 20,
-                padding: '20px'
-              }}
-            >
-              <div
-                className="glass-panel fade-in-scale"
-                style={{
-                  maxWidth: '360px',
-                  width: '100%',
-                  padding: '16px 16px 20px 16px',
-                  background: '#fcfbf9',
-                  color: '#1c1917',
-                  boxShadow: '0 20px 45px rgba(0, 0, 0, 0.6)',
-                  borderRadius: '2px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '18px'
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1/1',
-                    background: 'linear-gradient(135deg, #2e1065 0%, #0c0a09 100%)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    border: '1px solid rgba(0, 0, 0, 0.04)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <img
-                    src={birthdayConfig.photos[activeCapsule].src}
-                    alt="Memory"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div style={{ position: 'absolute', fontSize: '2.4rem', color: 'rgba(255, 255, 255, 0.2)' }}>✨</div>
-                </div>
-
-                <div
-                  style={{
-                    width: '100%',
-                    textAlign: 'center',
-                    padding: '8px 4px 8px 4px',
-                    fontFamily: 'var(--font-serif)',
-                    fontSize: '0.98rem',
-                    fontStyle: 'italic',
-                    lineHeight: '1.65',
-                    color: '#292524',
-                    minHeight: '52px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textWrap: 'balance'
-                  }}
-                >
-                  "{birthdayConfig.photos[activeCapsule].caption}"
-                </div>
-
-                <button
-                  className="btn-glow"
-                  onClick={() => handleSelectCapsule(null)}
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.05)',
-                    color: '#1c1917',
-                    borderColor: 'rgba(0, 0, 0, 0.15)',
-                    padding: '10px 24px',
-                    fontSize: '0.78rem',
-                    letterSpacing: '0.1em'
-                  }}
-                >
-                  Quay lại
-                </button>
-              </div>
+            <p>"{birthdayConfig.photos[activeCapsule ?? 0]?.caption}"</p>
+            <div className="memory-auto-progress">
+              <div className="memory-auto-bar" key={`bar-${activeCapsule}`} />
             </div>
-          )}
-        </>
+            <span className="memory-auto-hint">đang tự chuyển...</span>
+          </div>
+        </section>
       )}
 
-      {/* Overlay: Scene 6 Climax Warp display */}
       {scene === 6 && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            justifyContent: 'flex-end',
-            paddingBottom: '80px',
-            background: 'linear-gradient(to top, rgba(3, 0, 20, 0.7) 0%, rgba(3, 0, 20, 0) 100%)'
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              padding: '24px 32px',
-              maxWidth: '680px',
-              width: '90%',
-              textAlign: 'center',
-              boxShadow: '0 0 25px rgba(236, 72, 153, 0.1)'
-            }}
-          >
-            <p
-              style={{
-                fontSize: '1.15rem',
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                margin: 0,
-                color: '#f8fafc',
-                lineHeight: '1.65',
-                textWrap: 'balance'
-              }}
-            >
-              "Có những khoảnh khắc nhỏ thôi... Nhưng lại khiến Khôi nhớ rất lâu."
-            </p>
+        <section className="ui-overlay caption-overlay fade-in">
+          <div className="caption-panel glass-panel">
+            <p>"Có những khoảnh khắc nhỏ thôi, nhưng lại khiến tui nhớ rất lâu."</p>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Overlay: Scene 7 Spaceship flight display */}
       {scene === 7 && currentJourneyCaption && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            justifyContent: 'flex-end',
-            paddingBottom: '80px',
-            background: 'linear-gradient(to top, rgba(3, 0, 20, 0.7) 0%, rgba(3, 0, 20, 0) 100%)'
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              padding: '24px 32px',
-              maxWidth: '680px',
-              width: '90%',
-              textAlign: 'center',
-              boxShadow: '0 0 25px rgba(236, 72, 153, 0.1)'
-            }}
-          >
-            <p
-              style={{
-                fontSize: '1.15rem',
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                margin: 0,
-                color: '#f8fafc',
-                lineHeight: '1.65',
-                textWrap: 'balance'
-              }}
-            >
-              {currentJourneyCaption}
-            </p>
+        <section className="ui-overlay caption-overlay fade-in">
+          <div className="caption-panel glass-panel">
+            <p>{currentJourneyCaption}</p>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Overlay: Scene 8 YouTube embed video scene */}
       {scene === 8 && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            background: 'linear-gradient(to top, rgba(3, 0, 20, 0.96) 0%, rgba(3, 0, 20, 0.7) 100%)',
-            justifyContent: 'center',
-            padding: '24px 15px',
-            pointerEvents: 'auto',
-            zIndex: 10
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              maxWidth: '560px',
-              width: '100%',
-              padding: '28px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.55)',
-              border: '1px solid rgba(255, 255, 255, 0.04)',
-              borderRadius: '4px'
-            }}
-          >
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <h3 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-serif)', fontWeight: '400', margin: 0 }}>
-                {birthdayConfig.youtube.title}
-              </h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
-                {birthdayConfig.youtube.description}
-              </p>
-            </div>
-
-            <div style={{ position: 'relative', overflow: 'hidden', width: '100%', paddingTop: '56.25%', borderRadius: '2px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <iframe
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                src={`${birthdayConfig.youtube.embedUrl}?rel=0&modestbranding=1`}
-                title="Secret Video Message"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-
-            <div style={{ textAlign: 'center', marginTop: '4px' }}>
-              <button
-                className="btn-glow"
-                onClick={() => {
-                  setScene(9);
-                }}
-              >
-                Đọc thư tình
-              </button>
-            </div>
-          </div>
-        </div>
+        <HeartReveal onOpenLetter={handleHeartClick} />
       )}
 
-      {/* Overlay: Scene 9 Interactive Letter */}
       {scene === 9 && (
-        <InteractiveLetter onComplete={() => setScene(10)} />
+        <InteractiveLetter
+          initialPage={letterPage}
+          onPageChange={setLetterPage}
+          onBackScene={() => setScene(8)}
+          onComplete={() => setScene(10)}
+        />
       )}
 
-      {/* Overlay: Scene 10 Proposal Choice */}
       {scene === 10 && (
         <ProposalChoice
           onAccept={() => {
             setIsAccepted(true);
             setScene(11);
           }}
-          onRejectComplete={() => {
-            setIsRejected(true);
-            setScene(11);
-          }}
         />
       )}
 
-      {/* Overlay: Scene 11 Contact Panel */}
       {scene === 11 && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            background: 'linear-gradient(to top, rgba(3, 0, 20, 0.98) 0%, rgba(3, 0, 20, 0.75) 100%)',
-            justifyContent: 'center',
-            padding: '30px 15px',
-            pointerEvents: 'auto',
-            zIndex: 10
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              maxWidth: '520px',
-              width: '100%',
-              padding: '40px 32px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '24px',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.55)',
-              border: '1px solid rgba(255, 255, 255, 0.04)',
-              borderRadius: '4px',
-              textAlign: 'center'
-            }}
-          >
+        <section className="ui-overlay final-overlay fade-in">
+          <div className="glass-panel final-panel">
             {isAccepted ? (
               <>
-                <span style={{ fontSize: '2.5rem' }}>💝</span>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '400', fontFamily: 'var(--font-serif)', margin: 0, color: '#ec4899' }}>
-                  Cảm ơn Ân vì đã đồng ý!
-                </h2>
-                <p style={{ fontSize: '0.92rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0, lineHeight: '1.62' }}>
-                  {birthdayConfig.proposal.acceptedText}
-                </p>
+                <span className="final-icon">♡</span>
+                <h2>Cảm ơn bà vì đã đồng ý</h2>
+                <p>{birthdayConfig.proposal.acceptedText}</p>
               </>
             ) : (
               <>
-                <span style={{ fontSize: '2.5rem' }}>✨</span>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '400', fontFamily: 'var(--font-serif)', margin: 0 }}>
-                  Cảm ơn Ân đã lắng nghe
-                </h2>
-                <p style={{ fontSize: '0.92rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0, lineHeight: '1.62' }}>
-                  Dù thế nào, Khôi vẫn rất trân trọng vì Ân đã đọc hết món quà nhỏ này.
-                </p>
+                <span className="final-icon">✦</span>
+                <h2>Cảm ơn bà đã lắng nghe</h2>
+                <p>Dù thế nào, tui vẫn rất trân trọng vì bà đã đọc hết món quà nhỏ này.</p>
               </>
             )}
 
-            {/* Custom Time Badge details */}
             {isBirthdayMode && (
-              <div
-                style={{
-                  background: 'rgba(236, 72, 153, 0.1)',
-                  border: '1px solid rgba(236, 72, 153, 0.25)',
-                  borderRadius: '4px',
-                  padding: '10px 16px',
-                  fontSize: '0.78rem',
-                  color: '#f472b6',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                🎉 Hôm nay là ngày 10/07/2026 - Sinh nhật chính thức của Ân! 🎉
+              <div className="birthday-badge">
+                Hôm nay là ngày 10/07/2026, sinh nhật chính thức của Ân.
               </div>
             )}
             {isAfterBirthday && !isBirthdayMode && (
-              <div
-                style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: '4px',
-                  padding: '10px 16px',
-                  fontSize: '0.78rem',
-                  color: 'var(--text-muted)'
-                }}
-              >
-                Một món quà đã được mở vào dịp sinh nhật 10/07/2026.
+              <div className="birthday-badge muted">
+                Món quà này đã được mở vào dịp sinh nhật 10/07/2026.
               </div>
             )}
 
-            <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }}></div>
+            <p className="final-note">{birthdayConfig.contact.finalText}</p>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
-              {birthdayConfig.contact.finalText}
-            </p>
+            <img className="final-meme-sticker" src="/assets/images/memes/camera-cat.png" alt="" />
 
-            {/* Social triggers */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-              {birthdayConfig.contact.zaloUrl ? (
-                <a
-                  href={birthdayConfig.contact.zaloUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-glow"
-                  style={{ textAlign: 'center' }}
-                >
-                  Nhắn Zalo cho Khôi
+            <div className="contact-actions">
+              {birthdayConfig.contact.zaloUrl && (
+                <a href={birthdayConfig.contact.zaloUrl} target="_blank" rel="noreferrer" className="btn-glow">
+                  Nhắn Zalo cho tui
                 </a>
-              ) : (
-                <button className="btn-glow" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                  Khôi sẽ thêm link Zalo sau
-                </button>
               )}
-
-              {birthdayConfig.contact.messengerUrl ? (
-                <a
-                  href={birthdayConfig.contact.messengerUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-glow"
-                  style={{ textAlign: 'center' }}
-                >
-                  Nhắn Messenger cho Khôi
+              {birthdayConfig.contact.messengerUrl && (
+                <a href={birthdayConfig.contact.messengerUrl} target="_blank" rel="noreferrer" className="btn-glow">
+                  Nhắn Messenger cho tui
                 </a>
-              ) : (
-                <button className="btn-glow" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                  Khôi sẽ thêm link Messenger sau
-                </button>
               )}
             </div>
 
-            <button
-              className="btn-glow"
-              onClick={() => {
-                setIsAccepted(false);
-                setIsRejected(false);
-                setOpenedCapsules([]);
-                setTime(0);
-                setScene(1);
-              }}
-              style={{
-                marginTop: '12px',
-                padding: '8px 16px',
-                fontSize: '0.78rem',
-                background: 'transparent',
-                borderColor: 'rgba(255,255,255,0.08)',
-                color: 'var(--text-muted)'
-              }}
-            >
-              Quay lại từ đầu 🛸
+            <button className="btn-glow ghost compact" type="button" onClick={resetJourney}>
+              Xem lại từ đầu
             </button>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Floating audio controllers */}
       {scene > 1 && (
-        <AudioToggle isPlaying={isPlaying} onToggle={toggle} />
+        <>
+          <StoryMap scene={scene} maxSceneReached={maxSceneReached} onJump={setScene} />
+          <JourneyControls
+            canGoBack={scene > 3 && scene !== 9}
+            canGoNext={[3, 6, 7, 10].includes(scene)}
+            onBack={goBack}
+            onNext={goNext}
+            nextLabel={scene === 10 ? 'Đi tới kết' : 'Tiếp tục'}
+          />
+          <AudioToggle
+            isPlaying={isPlaying}
+            isMuted={isMuted}
+            volume={volume}
+            onToggle={toggle}
+            onMute={toggleMute}
+            onVolumeChange={setVolume}
+          />
+        </>
       )}
 
-      {/* Popup Overlay Panels for Easter Eggs */}
+
+
       {popupMessage && (
-        <div
-          className="ui-overlay fade-in"
-          style={{
-            zIndex: 9999,
-            background: 'rgba(3, 0, 20, 0.85)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            pointerEvents: 'auto'
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              maxWidth: '420px',
-              width: '90%',
-              padding: '30px 24px',
-              textAlign: 'center',
-              border: '1px solid rgba(236, 72, 153, 0.2)',
-              boxShadow: '0 0 30px rgba(236, 72, 153, 0.15)',
-              borderRadius: '8px'
-            }}
-          >
-            <h4 style={{ fontSize: '1.15rem', fontFamily: 'var(--font-serif)', color: '#f472b6', margin: '0 0 12px 0', fontStyle: 'italic' }}>
-              Lời thì thầm từ tinh cầu 💫
-            </h4>
-            <p style={{ margin: '0 0 24px 0', fontSize: '1.02rem', fontFamily: 'var(--font-serif)', color: '#f8fafc', lineHeight: '1.65', fontStyle: 'italic', textWrap: 'balance' }}>
-              "{popupMessage}"
-            </p>
-            <button
-              className="btn-glow"
-              onClick={() => setPopupMessage(null)}
-              style={{ padding: '10px 28px', fontSize: '0.8rem' }}
-            >
+        <section className="ui-overlay popup-overlay fade-in">
+          <div className="glass-panel popup-panel">
+            <h4>Lời thì thầm từ tinh cầu</h4>
+            <p>"{popupMessage}"</p>
+            <button className="btn-glow compact" onClick={() => setPopupMessage(null)}>
               Đóng lại
             </button>
           </div>
-        </div>
+        </section>
       )}
-
-    </div>
+    </main>
   );
 }

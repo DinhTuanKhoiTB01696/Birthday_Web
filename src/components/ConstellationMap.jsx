@@ -1,125 +1,83 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { birthdayConfig } from '../data/content';
 
-export default function ConstellationMap({ onComplete }) {
-  const [openedStars, setOpenedStars] = useState([]);
-  const [activeMessage, setActiveMessage] = useState(null);
+export default function ConstellationMap({ onComplete, onProgress }) {
+  // Start with the first star (index 0) already opened/read
+  const [openedStars, setOpenedStars] = useState([0]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const stars = birthdayConfig.constellation;
-
-  const handleStarClick = (idx) => {
-    if (!openedStars.includes(idx)) {
-      setOpenedStars((prev) => [...prev, idx]);
-    }
-    setActiveMessage(stars[idx].message);
-  };
-
+  const activeMessage = stars[activeIndex]?.message;
   const isAllOpened = openedStars.length === stars.length;
 
+  useEffect(() => {
+    onProgress?.(openedStars);
+  }, [onProgress, openedStars]);
+
+  const handleStarClick = (idx) => {
+    setActiveIndex(idx);
+    setOpenedStars((prev) => {
+      if (prev.includes(idx)) return prev;
+      return [...prev, idx].sort((a, b) => a - b);
+    });
+  };
+
   return (
-    <div 
-      className="ui-overlay fade-in" 
-      style={{
-        background: 'linear-gradient(to top, rgba(3, 0, 20, 0.96) 0%, rgba(3, 0, 20, 0.6) 100%)',
-        justifyContent: 'center',
-        padding: '30px 15px',
-        pointerEvents: 'auto',
-        zIndex: 10
-      }}
-    >
-      <div 
-        className="glass-panel" 
-        style={{
-          maxWidth: '520px',
-          width: '100%',
-          padding: '36px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '24px',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.55)',
-          border: '1px solid rgba(255, 255, 255, 0.04)',
-          borderRadius: '4px',
-          textAlign: 'center'
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span 
-            style={{ 
-              fontFamily: 'var(--font-sans)', 
-              fontSize: '0.68rem', 
-              letterSpacing: '0.25em', 
-              textTransform: 'uppercase', 
-              color: 'var(--text-muted)'
-            }}
-          >
-            Constellation Map
-          </span>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '400', margin: 0, fontFamily: 'var(--font-serif)' }}>
-            Những Điều Khôi Thích Ở <span style={{ fontStyle: 'italic', color: '#ec4899', fontWeight: '600' }}>Ân</span>
+    <section className="ui-overlay constellation-scene fade-in">
+      <div className="constellation-panel glass-panel">
+        <div className="scene-heading">
+          <span>Constellation map</span>
+          <h2>
+            Những điều tui thích ở <em>Ân</em>
           </h2>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
-            Khám phá từng ngôi sao để mở chòm sao tình cảm...
-          </p>
+          <p>Bấm chọn từng ngôi sao để thắp sáng và đọc những điều nhỏ tui đã thầm để ý nha.</p>
         </div>
 
-        {/* Star Grid Layout */}
-        <div className="constellation-container">
+        <div className="constellation-sky" aria-label="Chòm sao cảm xúc">
+          <svg className="constellation-lines" viewBox="0 0 100 70" aria-hidden="true">
+            <polyline points="12,18 35,10 58,22 84,14 72,48 45,58 18,44 12,18" />
+            <polyline points="35,10 45,58 58,22" />
+          </svg>
           {stars.map((star, idx) => {
             const isOpened = openedStars.includes(idx);
+            const isActive = activeIndex === idx;
             return (
-              <div 
-                key={idx}
-                className={`star-node ${isOpened ? 'opened' : ''}`}
+              <button
+                key={star.title}
+                type="button"
+                className={`star-node ${isOpened ? 'opened' : ''} ${isActive ? 'active' : ''}`}
                 onClick={() => handleStarClick(idx)}
+                style={{ '--delay': `${idx * 120}ms` }}
               >
-                <span style={{ fontSize: '1.3rem' }}>{isOpened ? '⭐' : '✨'}</span>
-                <span 
-                  style={{ 
-                    fontSize: '0.78rem', 
-                    color: isOpened ? '#f8fafc' : 'rgba(255, 255, 255, 0.45)',
-                    fontWeight: '500'
-                  }}
-                >
-                  {star.title}
-                </span>
-              </div>
+                <span className="star-icon" aria-hidden="true" />
+                <span>{star.title}</span>
+              </button>
             );
           })}
         </div>
 
-        {/* Message Reveal Console */}
-        <div 
-          style={{
-            minHeight: '60px',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '12px 18px',
-            background: 'rgba(255, 255, 255, 0.01)',
-            borderRadius: '4px',
-            border: '1px solid rgba(255, 255, 255, 0.03)',
-            fontSize: '0.88rem',
-            color: activeMessage ? '#f472b6' : 'rgba(255, 255, 255, 0.3)',
-            fontStyle: 'italic',
-            lineHeight: '1.62'
-          }}
-        >
-          {activeMessage ? `"${activeMessage}"` : "Nhấp một ngôi sao để nghe lời tự sự..."}
+        <div className="constellation-message" aria-live="polite">
+          {activeMessage ? `"${activeMessage}"` : "Chờ một ngôi sao sáng lên..."}
         </div>
 
-        {/* Proceed Action Button */}
-        {isAllOpened && (
-          <button 
-            className="btn-glow fade-in" 
-            onClick={onComplete}
-            style={{ marginTop: '4px' }}
-          >
-            Tiếp tục hành trình ✨
-          </button>
-        )}
+        <button
+          className={`btn-glow compact ${!isAllOpened ? 'disabled-hint' : ''}`}
+          type="button"
+          onClick={() => {
+            if (isAllOpened) {
+              onComplete();
+            }
+          }}
+          style={{
+            opacity: isAllOpened ? 1 : 0.65,
+            cursor: isAllOpened ? 'pointer' : 'not-allowed',
+            background: isAllOpened ? '#ec4899' : 'rgba(255, 255, 255, 0.08)',
+            borderColor: isAllOpened ? '#ec4899' : 'rgba(255, 255, 255, 0.15)'
+          }}
+        >
+          {isAllOpened ? 'Tiếp tục hành trình' : `Thắp sáng chòm sao (${openedStars.length}/${stars.length})`}
+        </button>
       </div>
-    </div>
+    </section>
   );
 }
